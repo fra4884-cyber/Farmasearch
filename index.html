@@ -1057,8 +1057,8 @@
 
   /* ==========================================================
      SISTEMA AUDIO — musica di sottofondo
-     Fix: gestione corretta della Promise di play() per evitare
-     l'AbortError causato da play/pause in rapida successione.
+     Compatibile Safari iOS: play() chiamato DIRETTAMENTE
+     nel gestore click, senza funzioni intermedie asincrone.
   ========================================================== */
   const bgAudio      = document.getElementById('bgAudio');
   const audioFab     = document.getElementById('audioFab');
@@ -1072,75 +1072,17 @@
   const savedOn  = localStorage.getItem('audio_on') === 'true';
   const savedVol = parseFloat(localStorage.getItem('audio_vol') ?? '0.25');
 
-  // Applica volume salvato
+  // Applica volume e slider salvati
   bgAudio.volume       = savedVol;
   volumeSlider.value   = Math.round(savedVol * 100);
   volValue.textContent = Math.round(savedVol * 100) + '%';
 
-  // Ripristina stato toggle
+  // Ripristina stato toggle visivo (NON avvia audio — Safari lo blocca)
   audioToggle.checked = savedOn;
+  // Se era ON mostra un hint visivo sul FAB
+  if (savedOn) audioFab.textContent = '🎵 Audio ●';
 
-  // Flag per tracciare se un play() è già in corso
-  // Serve a evitare l'AbortError da play→pause sovrapposti
-  let isPlaying  = false;
-  let playPending = false; // true se vogliamo suonare appena possibile
-
-  /* Funzione sicura per avviare l'audio —
-     attende che il canPlay sia pronto prima di chiamare play() */
-  function safePlay() {
-    if (isPlaying) return; // già in riproduzione, niente da fare
-
-    // Se il browser non ha ancora caricato abbastanza dati, aspetta
-    if (bgAudio.readyState < 2) {
-      playPending = true; // ci riproveremo su canplay
-      bgAudio.load();     // forza il caricamento
-      return;
-    }
-
-    playPending = false;
-    const promise = bgAudio.play();
-    if (promise !== undefined) {
-      promise
-        .then(() => { isPlaying = true; })
-        .catch(() => {
-          // Il browser ha bloccato l'autoplay (policy): ignoriamo silenziosamente
-          isPlaying = false;
-        });
-    }
-  }
-
-  /* Quando il browser ha caricato abbastanza dati e
-     c'era una richiesta di play in attesa, avvia */
-  bgAudio.addEventListener('canplay', () => {
-    if (playPending && audioToggle.checked) {
-      safePlay();
-    }
-  });
-
-  /* Quando l'audio finisce davvero di suonare, aggiorna il flag
-     (non dovrebbe succedere grazie a loop, ma per sicurezza) */
-  bgAudio.addEventListener('pause',  () => { isPlaying = false; });
-  bgAudio.addEventListener('ended',  () => { isPlaying = false; });
-  bgAudio.addEventListener('playing',() => { isPlaying = true;  });
-
-  /* --- Ripristino al reload: parte solo dopo il primo click utente ---
-     I browser moderni bloccano l'autoplay senza interazione. */
-  function onFirstInteraction() {
-    // Rimuovi subito per non rientrare più
-    document.removeEventListener('click',   onFirstInteraction, true);
-    document.removeEventListener('keydown', onFirstInteraction, true);
-    // Se l'utente aveva lasciato ON, avvia l'audio
-    if (audioToggle.checked) safePlay();
-  }
-
-  if (savedOn) {
-    document.addEventListener('click',   onFirstInteraction, true);
-    document.addEventListener('keydown', onFirstInteraction, true);
-  }
-
-  /* --- Apri / chiudi pannello FAB ---
-     Usiamo stopPropagation sul FAB per evitare che il click
-     sul pulsante triggeri anche il listener "chiudi fuori" */
+  /* --- Apri / chiudi pannello FAB --- */
   audioFab.addEventListener('click', (e) => {
     e.stopPropagation();
     audioPanel.classList.toggle('open');
@@ -1159,14 +1101,30 @@
   });
 
   /* --- Toggle ON / OFF ---
-     Usa 'change' invece di 'click' per maggiore compatibilità */
+     IMPORTANTE per Safari: play() deve stare QUI DENTRO,
+     chiamato sincrono dentro il gestore dell'evento utente. */
   audioToggle.addEventListener('change', () => {
     if (audioToggle.checked) {
-      safePlay();
+      // Ricarica src se necessario (primo play su Safari)
+      if (bgAudio.readyState === 0) bgAudio.load();
+
+      bgAudio.play()
+        .then(() => {
+          audioFab.textContent = '🎵 Audio ●';
+          localStorage.setItem('audio_on', 'true');
+        })
+        .catch((err) => {
+          // Safari ha bloccato — ripristina toggle e avvisa
+          console.warn('Audio bloccato dal browser:', err);
+          audioToggle.checked  = false;
+          audioFab.textContent = '🎵 Audio';
+          localStorage.setItem('audio_on', 'false');
+        });
     } else {
       bgAudio.pause();
+      audioFab.textContent = '🎵 Audio';
+      localStorage.setItem('audio_on', 'false');
     }
-    localStorage.setItem('audio_on', audioToggle.checked);
   });
 
   /* --- Slider volume --- */
