@@ -1116,17 +1116,22 @@
   });
 
   // --- Toggle ON / OFF ---
-  audioToggle.addEventListener('change', () => {
-    if (audioToggle.checked) {
-      userInteracted = true;
-      bgAudio.play().catch(() => {});
-    } else {
-      bgAudio.pause();
-    }
-    // Salva preferenza
-    localStorage.setItem('audio_on', audioToggle.checked);
-  });
+  audioToggle.addEventListener('click', () => {
+  if (audioToggle.checked) {
+    bgAudio.play()
+      .then(() => {
+        console.log("Audio partito ✅");
+      })
+      .catch(err => {
+        console.warn("Play bloccato:", err);
+      });
+  } else {
+    bgAudio.pause();
+  }
 
+  localStorage.setItem('audio_on', audioToggle.checked);
+});
+  
   // --- Slider volume ---
   volumeSlider.addEventListener('input', () => {
     const vol = volumeSlider.value / 100;
