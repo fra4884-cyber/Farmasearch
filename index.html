@@ -497,6 +497,209 @@
       .app-title   { font-size: 1.85rem; }
       #jsonOutput  { font-size: 0.88rem; }
     }
+
+    /* ============================================================
+       AUDIO — FAB (pulsante fisso in basso a destra)
+    ============================================================ */
+    #audioFab {
+      position: fixed;
+      bottom: 24px;
+      right: 20px;
+      z-index: 100;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 11px 18px;
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-btn);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.25s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #audioFab:active { transform: scale(0.94); }
+
+    /* ============================================================
+       AUDIO — PANNELLO overlay
+    ============================================================ */
+    #audioPanel {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 200;
+      width: min(320px, calc(100vw - 32px));
+      /* nascosto di default */
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    #audioPanel.open {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .audio-panel-inner {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      padding: 18px 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: background 0.4s, border-color 0.4s;
+    }
+
+    /* Header pannello */
+    .audio-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .audio-panel-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+    }
+
+    #audioClose {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #audioClose:active { background: var(--accent-glow); }
+
+    /* Righe del pannello */
+    .audio-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .audio-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* Toggle switch ON/OFF */
+    .audio-switch {
+      position: relative;
+      width: 48px;
+      height: 27px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .audio-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .audio-slider-knob {
+      position: absolute;
+      inset: 0;
+      background: var(--border);
+      border-radius: 27px;
+      transition: background 0.3s;
+    }
+
+    .audio-slider-knob::before {
+      content: '';
+      position: absolute;
+      width: 21px;
+      height: 21px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      transition: transform 0.3s;
+    }
+
+    .audio-switch input:checked + .audio-slider-knob {
+      background: var(--accent);
+    }
+
+    .audio-switch input:checked + .audio-slider-knob::before {
+      transform: translateX(21px);
+    }
+
+    /* Slider volume */
+    .audio-volume-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .audio-vol-icon { font-size: 0.9rem; }
+
+    #volumeSlider {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 4px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+
+    #volumeSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    #volumeSlider::-webkit-slider-thumb:active { transform: scale(1.2); }
+
+    #volumeSlider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+    }
+
+    #volValue {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      min-width: 30px;
+      text-align: right;
+    }
   </style>
 </head>
 <body>
@@ -584,6 +787,57 @@
   </footer>
 
 </div><!-- /app-wrapper -->
+
+<!-- ============================================================
+     AUDIO — musica di sottofondo
+     Il file deve essere in /audio/background.mp3
+============================================================ -->
+<audio id="bgAudio" loop preload="none">
+  <source src="audio/background.mp3" type="audio/mpeg" />
+</audio>
+
+<!-- PULSANTE FISSO — apre il pannello audio -->
+<button id="audioFab" aria-label="Controlli audio" title="Controlli audio">
+  🎵 Audio
+</button>
+
+<!-- PANNELLO AUDIO — overlay chiudibile -->
+<div id="audioPanel" role="dialog" aria-modal="true" aria-label="Pannello controlli audio">
+  <div class="audio-panel-inner">
+    <!-- Intestazione pannello -->
+    <div class="audio-panel-header">
+      <span class="audio-panel-title">🎵 Musica di sottofondo</span>
+      <button id="audioClose" aria-label="Chiudi pannello audio">✕</button>
+    </div>
+
+    <!-- Toggle ON / OFF -->
+    <div class="audio-row">
+      <span class="audio-label">Musica</span>
+      <label class="audio-switch" aria-label="Attiva o disattiva musica">
+        <input type="checkbox" id="audioToggle" />
+        <span class="audio-slider-knob"></span>
+      </label>
+    </div>
+
+    <!-- Slider volume -->
+    <div class="audio-row">
+      <span class="audio-label">Volume</span>
+      <div class="audio-volume-row">
+        <span class="audio-vol-icon">🔈</span>
+        <input
+          type="range"
+          id="volumeSlider"
+          min="0"
+          max="100"
+          value="25"
+          aria-label="Volume audio"
+        />
+        <span class="audio-vol-icon">🔊</span>
+        <span id="volValue">25%</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ============================================================
      JAVASCRIPT
@@ -798,6 +1052,88 @@
   window.addEventListener('load', () => {
     // Piccolo delay per evitare problemi su Safari iOS
     setTimeout(() => queryInput.focus(), 300);
+  });
+
+  /* ==========================================================
+     SISTEMA AUDIO — musica di sottofondo
+  ========================================================== */
+  const bgAudio     = document.getElementById('bgAudio');
+  const audioFab    = document.getElementById('audioFab');
+  const audioPanel  = document.getElementById('audioPanel');
+  const audioClose  = document.getElementById('audioClose');
+  const audioToggle = document.getElementById('audioToggle');
+  const volumeSlider= document.getElementById('volumeSlider');
+  const volValue    = document.getElementById('volValue');
+
+  // --- Carica preferenze salvate da localStorage ---
+  const savedOn  = localStorage.getItem('audio_on')  === 'true';
+  const savedVol = parseFloat(localStorage.getItem('audio_vol') ?? '0.25');
+
+  // Applica volume salvato
+  bgAudio.volume     = savedVol;
+  volumeSlider.value = Math.round(savedVol * 100);
+  volValue.textContent = Math.round(savedVol * 100) + '%';
+
+  // Applica stato toggle salvato
+  audioToggle.checked = savedOn;
+
+  // Se era ON, parte solo dopo la prima interazione utente
+  // (obbligatorio per le policy autoplay del browser)
+  let userInteracted = false;
+
+  function tryResume() {
+    if (!userInteracted && audioToggle.checked) {
+      userInteracted = true;
+      bgAudio.play().catch(() => {}); // ignora errori silenziosi
+    }
+    // Rimuove il listener dopo il primo click
+    document.removeEventListener('click', tryResume);
+    document.removeEventListener('keydown', tryResume);
+  }
+
+  if (savedOn) {
+    // Aspetta il primo click dell'utente (qualsiasi punto della pagina)
+    document.addEventListener('click', tryResume);
+    document.addEventListener('keydown', tryResume);
+  }
+
+  // --- Apri / chiudi pannello ---
+  audioFab.addEventListener('click', () => {
+    audioPanel.classList.toggle('open');
+  });
+
+  audioClose.addEventListener('click', () => {
+    audioPanel.classList.remove('open');
+  });
+
+  // Chiudi pannello cliccando fuori
+  document.addEventListener('click', (e) => {
+    if (audioPanel.classList.contains('open') &&
+        !audioPanel.contains(e.target) &&
+        e.target !== audioFab) {
+      audioPanel.classList.remove('open');
+    }
+  });
+
+  // --- Toggle ON / OFF ---
+  audioToggle.addEventListener('change', () => {
+    if (audioToggle.checked) {
+      userInteracted = true;
+      bgAudio.play().catch(() => {});
+    } else {
+      bgAudio.pause();
+    }
+    // Salva preferenza
+    localStorage.setItem('audio_on', audioToggle.checked);
+  });
+
+  // --- Slider volume ---
+  volumeSlider.addEventListener('input', () => {
+    const vol = volumeSlider.value / 100;
+    bgAudio.volume = vol;
+    volValue.textContent = volumeSlider.value + '%';
+    // Salva preferenza
+    localStorage.setItem('audio_vol', vol);
   });
 </script>
 
